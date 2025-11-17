@@ -1,0 +1,6 @@
+int,str,int,str
+ID, Name, Phone, Address
+2,"hila",78329,"norway"
+3,"james",63472,"new york"
+4,"luna",92837,"berlin"
+5,"mike",12345,"san francisco"w
