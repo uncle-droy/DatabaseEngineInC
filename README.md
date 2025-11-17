@@ -4,7 +4,7 @@ This is a simple database engine which stores data in separate TXT files for now
 
 The following commands are working properly:
 
--OPEN: Select a database file to work on
+-OPEN: Select a database file to work on\n
 -CREATE: Create a new database file
 -OVERVIEW: Show list of all data inside a db
 -INSERT: Insert new data in the database
