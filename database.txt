@@ -1,6 +1,8 @@
-int,str,int,str
-ID, Name, Phone, Address
-2,"hila",78329,"norway"
-3,"james",63472,"new york"
-4,"luna",92837,"berlin"
-5,"mike",12345,"san francisco"w
+int,str,str,int
+2,7,15,5
+ID,Name,Address,Phone
+1,"alice","london",12345
+2,"tony","norway",78329
+3,"james","new york",63472
+4,"luna","berlin",92837
+5,"mike","san francisco",12345

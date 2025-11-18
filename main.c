@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <ctype.h>
 #include <limits.h>
 
 bool running = true;
@@ -22,7 +23,7 @@ void process_command(char* input){
     static char lines[1000][1000];
 
     //separate main command keyword from rest of input
-    char *command = strtok(input, " \n");
+    char *command = strlwr(strtok(input, " \n"));
     char *arg_str = strtok(NULL, "\n");   // everything after command
 
 
@@ -39,7 +40,7 @@ void process_command(char* input){
         num_records = 0;
         num_fields = 0;
         //Gather the filename path and open in R+ mode
-        printf("Enter filename in current directory to open:\n");
+        printf("Enter filename in current directory to open: ");
         fgets(filename, sizeof(filename), stdin); 
         filename[strcspn(filename, "\n")] = 0;
         db_file = fopen(filename, "r+");
@@ -88,7 +89,6 @@ void process_command(char* input){
                     num_fields = j;   // header defines number of fields
                 }
             }
-
             
             // num_records--; //exclude header line from record count
             printf("Parsed %d records with %d fields each.\n", num_records, num_fields);
@@ -100,8 +100,8 @@ void process_command(char* input){
 
     else if (strcmp(command, "insert") == 0 && db_file != NULL && contents != NULL){
         char *value = strtok(arg_str, ",");
-        printf("DEBUG INSERT: arg_str = '%s'\n", arg_str);
-        printf("DEBUG INSERT: num_fields = %d\n", num_fields);
+        // printf("DEBUG INSERT: arg_str = '%s'\n", arg_str);
+        // printf("DEBUG INSERT: num_fields = %d\n", num_fields);
         int insert_successful = 1;
         for (int i = 0; i < num_fields; i++){
             
@@ -112,18 +112,18 @@ void process_command(char* input){
             }
     
             char field_def_copy[100];
-        strcpy(field_def_copy, contents_array[0][i]);
-        
-        char type[10]; // Buffer to hold the extracted type
-        // sscanf reads the first string token into 'type'
-        if (sscanf(field_def_copy, "%9s", type) != 1) { 
-             printf("Error parsing field definition.\n");
-             insert_successful = 0;
-             break;
-        }
-        // --- End of Fix ---
+            strcpy(field_def_copy, contents_array[0][i]);
+            
+            char type[10]; // Buffer to hold the extracted type
+            // sscanf reads the first string token into 'type'
+            if (sscanf(field_def_copy, "%9s", type) != 1) { 
+                printf("Error parsing field definition.\n");
+                insert_successful = 0;
+                break;
+            }
+            // --- End of Fix ---
 
-        while (*value == ' ') value++; // Trim leading spaces
+            while (*value == ' ') value++; // Trim leading spaces
             
             if (strcmp(type, "int") == 0){
                 //validate integer input
@@ -136,14 +136,27 @@ void process_command(char* input){
                     break;
                 }
                 else{
-                    strcpy(contents_array[num_records][i], value);
+                    if (strlen(value) <= strtol(contents_array[1][i], NULL, 10)){
+                        strcpy(contents_array[num_records][i], value);
+                        printf("Length of limit: %lu and length of input:%lu.\n", strtol(contents_array[1][i], NULL, 10),strlen(value));
+                    }
+                    else{
+                        printf("Input length exceeds defined length: %lu\n", strtol(contents_array[1][i], NULL, 10));
+                        break;
+                    }
                 }
             }
             else if (strcmp(type, "str") == 0){
                 //validate string input
-               
-
-                strcpy(contents_array[num_records][i], value);
+                if (strlen(value) <= strtol(contents_array[1][i], NULL, 10)){
+                    strcpy(contents_array[num_records][i], value);
+                    printf("Length of limit: %lu and length of input:%lu.\n", strtol(contents_array[1][i], NULL, 10),strlen(value));
+                }
+                else{
+                    printf("Input length exceeds defined length: %lu\n", strtol(contents_array[1][i], NULL, 10));
+                    break;
+                }
+                
             }
 
             else if (strcmp(type, "bool") == 0){
@@ -172,16 +185,16 @@ void process_command(char* input){
     
     else if (strcmp(command, "overview") == 0 && db_file != NULL && contents != NULL){
         printf("Current Database Contents:\n");
-        for (int r = 1; r < num_records; r++){
+        for (int r = 2; r < num_records; r++){
             for (int f = 0; f < num_fields; f++){
-                printf("%s ", contents_array[r][f]);
+                printf("%-*s ", strtol(contents_array[1][f], NULL, 10) + 3, contents_array[r][f]);
             }
             printf("\n");
         }
     }
     else if (strcmp(command, "rowdelete") == 0 && db_file != NULL && contents != NULL){
         //parse row number from arg_str
-        int row_to_delete = atoi(arg_str) + 1;
+        int row_to_delete = atoi(arg_str) + 2;
         if (row_to_delete <= 0 || row_to_delete >= num_records){
             printf("Invalid row number: %d\n", row_to_delete);
             return;
@@ -195,6 +208,81 @@ void process_command(char* input){
         num_records--;
         printf("Row %d deleted successfully.\n", row_to_delete+1);
     }
+    
+    else if (strcmp(command, "fielddelete") == 0 && db_file != NULL && contents != NULL){
+        //parse field number from arg_str
+        int field_to_delete = atoi(arg_str);
+        if (field_to_delete <= 0 || field_to_delete > num_fields){
+            printf("Invalid field number: %d\n", field_to_delete);
+            return;
+        }
+        //shift all fields after the deleted field left by one
+        for (int r = 0; r < num_records; r++){
+            for (int f = field_to_delete; f < num_fields - 1; f++){
+                strcpy(contents_array[r][f], contents_array[r][f + 1]);
+            }
+        }
+        num_fields--;
+        printf("Field %d deleted successfully.\n", field_to_delete);
+    }
+
+    else if (strcmp(command,"edit") ==0 && db_file != NULL && contents != NULL){
+        //parse row number and field name from arg_str
+        char *row_str = strtok(arg_str, " ");
+        char *field_str = strtok(NULL, " ");
+        char *new_value = strtok(NULL, "\n");
+        int user_row_index = atoi(row_str);
+        int array_row_index = user_row_index + 2;
+
+        if (user_row_index <= 0 || user_row_index > num_records - 2){
+            printf("Invalid row number: %d\n", user_row_index);
+            return;
+        }
+        
+        int i = 0;
+        printf("Processing EDIT command for Row: %d, Field: %s...\n", user_row_index, field_str);
+        while (strcmp(field_str, contents_array[2][i]) != 0) {
+            printf("Checking field %s at index %d\n", contents_array[1][i], i);
+            if (i<=num_fields -1){
+                i++;
+            }
+            else{
+                printf("Field %s not found in database.\n", field_str);
+                return;
+            }
+        }
+        
+        //Check data type of field to validate new value
+        char field_def_copy[100];
+        strcpy(field_def_copy, contents_array[0][i]);
+        char type[10]; 
+        if (sscanf(field_def_copy, "%9s", type) != 1) { 
+             printf("Error parsing field definition.\n");
+             return;
+        }
+        if (strcmp(type, "int") == 0){
+            //validate integer input
+            char* endptr;
+            long val;
+            val = strtol(new_value, &endptr, 10);
+            if (*endptr != '\0' || endptr == new_value || (errno == ERANGE && (val == LONG_MAX || val == LONG_MIN)) || (val > INT_MAX || val < INT_MIN)){
+                printf("Invalid integer input: %s\n", new_value);
+                return;
+            }
+        }
+        else if (strcmp(type, "bool") == 0){
+            //validate boolean input
+            if (strcmp(new_value, "true") != 0 && strcmp(new_value, "false") != 0){
+                printf("Invalid boolean input: %s\n", new_value);
+                return;
+            }
+        }
+        //update value in contents_array
+        strcpy(contents_array[array_row_index][i], new_value);
+        printf("Row %d, Field %s updated successfully.\n", user_row_index, field_str);
+    }
+
+
     else if (strcmp(command, "create") == 0){
         printf("Processing CREATE command...\n");
         if (contents) {
@@ -206,7 +294,7 @@ void process_command(char* input){
             db_file = NULL;
         }
         // Add logic for CREATE command
-        printf("Enter filename for new database:\n");
+        printf("Enter filename for new database:");
         char filename[100];
         fgets(filename, sizeof(filename), stdin);
         filename[strcspn(filename, "\n")] = 0; // Remove trailing newline
@@ -217,20 +305,27 @@ void process_command(char* input){
             printf("Database file created: %s\n", filename);
         }
         
-        printf("Define fields formats (serparated by commas):\n");
-        char field_definitions[256];
-        fgets(field_definitions, sizeof(field_definitions), stdin);
-        field_definitions[strcspn(field_definitions, "\n")] = 0; // Remove trailing newline
-        
         printf("Define corresponding field names (serparated by commas):\n");
         char field_names[256];
         fgets(field_names, sizeof(field_names), stdin);
         field_names[strcspn(field_names, "\n")] = 0; // Remove trailing newline
+        
+        printf("Define fields types (serparated by commas):\n");
+        char field_definitions[256];
+        fgets(field_definitions, sizeof(field_definitions), stdin);
+        field_definitions[strcspn(field_definitions, "\n")] = 0; // Remove trailing newline
+        
+        printf("Define lengths for each field (serparated by commas):\n");
+        char field_lengths[256];
+        fgets(field_lengths, sizeof(field_lengths), stdin);
+        field_lengths[strcspn(field_lengths, "\n")] = 0; // Remove trailing newline
 
         fprintf(db_file, "%s\n", field_definitions);
+        fprintf(db_file, "%s\n", field_lengths);
         fprintf(db_file, "%s\n", field_names);
 
         fclose(db_file);
+        printf("Database schema written to file successfully.\nOpen the database using the 'open' command to start adding records.\n");
     }
 
     else if (strcmp(command,"commit") ==0){
@@ -257,6 +352,44 @@ void process_command(char* input){
         printf("All changes committed to database file successfully.\n");
     }
 
+    else if (strcmp(command, "rename") == 0){
+        printf("Enter old field name: ");
+        char old_field_name[100];
+        fgets(old_field_name, sizeof(old_field_name), stdin);
+        old_field_name[strcspn(old_field_name, "\n")] = 0;
+        printf("Enter new field name: ");
+        char new_field_name[100];
+        fgets(new_field_name, sizeof(new_field_name), stdin);
+        new_field_name[strcspn(new_field_name, "\n")] = 0;
+        int i = 0;
+        while (strcmp(old_field_name, contents_array[1][i]) != 0) {
+            printf("Checking field %s at index %d\n", contents_array[1][i], i);
+            if (i<=num_fields -1){
+                i++;
+            }
+            else{
+                printf("Field %s not found in database.\n", old_field_name);
+                return;
+            }
+        }
+        strcpy(contents_array[1][i], new_field_name);
+        printf("Field name '%s' renamed to '%s' successfully.\n", old_field_name, new_field_name);
+    }
+
+    else if (strcmp(command, "help") == 0){
+        printf("Available commands:\n");
+        printf("open - Open an existing database file\n");
+        printf("create - Create a new database file\n");
+        printf("insert <values> - Insert a new record with comma-separated values\n");
+        printf("overview - Display all records in the current database\n");
+        printf("rename - Rename a specific field\n");
+        printf("rowdelete <row_number> - Delete a specific row by its number\n");
+        printf("fielddelete <field_number> - Delete a specific field by its number\n");
+        printf("edit <row_number> <field_name> <new_value> - Edit data in a specific field in a specific row\n");
+        printf("commit - Save all changes to the database file\n");
+        printf("exit - Exit the database engine\n");
+    }
+
     else if (strcmp(command, "exit") == 0){
         running = false;
         fclose(db_file);
@@ -277,7 +410,7 @@ int main(){
     while (running){
         printf("> ");
         fgets(input, sizeof(input), stdin);
-        strlwr(input);
+        // strlwr(input);
         // if (strcmp(input, "exit\n") == 0){
         //     running = false;
         //     printf("Exiting safely, after processing all transactions...\n");
@@ -290,4 +423,3 @@ int main(){
     }
     return 0;
 }
-
