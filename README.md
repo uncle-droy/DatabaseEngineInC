@@ -1,4 +1,4 @@
-Simple File Based Database Engine
+Simple File Based Database Engine in C
 
 This is a simple database engine which stores data in separate TXT files (for now, in future we will use .bin files).
 
