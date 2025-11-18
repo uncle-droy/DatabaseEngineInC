@@ -376,6 +376,34 @@ void process_command(char* input){
         printf("Field name '%s' renamed to '%s' successfully.\n", old_field_name, new_field_name);
     }
 
+    else if (strcmp(command, "addfield") == 0){
+        //Command to add new field to database
+        printf("Enter new field definition (type length name): ");
+        char field_def[100];
+        fgets(field_def, sizeof(field_def), stdin);
+        field_def[strcspn(field_def, "\n")] = 0;
+        
+        printf("Enter field type (int/str/bool): ");
+        char field_type[10];
+        fgets(field_type, sizeof(field_type), stdin);
+        field_type[strcspn(field_type, "\n")] = 0;
+        
+        printf("Enter field length: ");
+        char field_length[10];
+        fgets(field_length, sizeof(field_length), stdin);
+        field_length[strcspn(field_length, "\n")] = 0;
+
+        printf("Adding new field: %s\n", field_def);
+        //Update contents_array to add new field
+        strcpy(contents_array[0][num_fields], field_type);
+        strcpy(contents_array[1][num_fields], field_length);
+        strcpy(contents_array[2][num_fields], field_def);
+        for (int r = 3; r < num_records; r++){
+            strcpy(contents_array[r][num_fields], ""); //initialize new field to empty string
+        }
+        num_fields++; // Increment the number of fields
+    }
+
     else if (strcmp(command, "help") == 0){
         printf("Available commands:\n");
         printf("open - Open an existing database file\n");

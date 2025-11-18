@@ -15,9 +15,10 @@ The following commands are working properly:
 - FIELDDELETE: Delete a field
 - RENAME: Rename a field
 - EDIT: Edit a particular cell's data given its row number and field name
+- ADDFIELD: Add a new field to the database
 - COMMIT: Commit all changes to the database file permanently
 - HELP: Show list of all commands and how to use them
 
 Commands and features yet to come:
-Select statments to show particular data
-Primary key system
+- Select statments to show particular data
+- Primary key system
