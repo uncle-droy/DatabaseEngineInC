@@ -39,10 +39,7 @@ void process_command(char* input){
         }
         num_records = 0;
         num_fields = 0;
-        //Gather the filename path and open in R+ mode
-        printf("Enter filename in current directory to open: ");
-        fgets(filename, sizeof(filename), stdin); 
-        filename[strcspn(filename, "\n")] = 0;
+        strcpy(filename, arg_str);
         db_file = fopen(filename, "r+");
         //error handling for file open
         if (db_file == NULL){
@@ -146,6 +143,7 @@ void process_command(char* input){
                     }
                 }
             }
+            
             else if (strcmp(type, "str") == 0){
                 //validate string input
                 if (strlen(value) <= strtol(contents_array[1][i], NULL, 10)){
@@ -270,6 +268,13 @@ void process_command(char* input){
                 return;
             }
         }
+        else if (strcmp(type, "str") == 0){
+            //validate string input
+            if (strlen(new_value) > strtol(contents_array[1][i], NULL, 10)){
+                printf("Input length exceeds defined length: %lu\n", strtol(contents_array[1][i], NULL, 10));
+                return;
+            }
+        }
         else if (strcmp(type, "bool") == 0){
             //validate boolean input
             if (strcmp(new_value, "true") != 0 && strcmp(new_value, "false") != 0){
@@ -353,17 +358,21 @@ void process_command(char* input){
     }
 
     else if (strcmp(command, "rename") == 0){
-        printf("Enter old field name: ");
+        // printf("Enter old field name: ");
         char old_field_name[100];
-        fgets(old_field_name, sizeof(old_field_name), stdin);
-        old_field_name[strcspn(old_field_name, "\n")] = 0;
-        printf("Enter new field name: ");
+        // fgets(old_field_name, sizeof(old_field_name), stdin);
+        // old_field_name[strcspn(old_field_name, "\n")] = 0;
+        // printf("Enter new field name: ");
         char new_field_name[100];
-        fgets(new_field_name, sizeof(new_field_name), stdin);
-        new_field_name[strcspn(new_field_name, "\n")] = 0;
+        // fgets(new_field_name, sizeof(new_field_name), stdin);
+        // new_field_name[strcspn(new_field_name, "\n")] = 0;
+        char *old_field_name_arg = strtok(arg_str, " ");
+        char *new_field_name_arg = strtok(NULL, "\n");
+        strcpy(old_field_name, old_field_name_arg);
+        strcpy(new_field_name, new_field_name_arg);
         int i = 0;
-        while (strcmp(old_field_name, contents_array[1][i]) != 0) {
-            printf("Checking field %s at index %d\n", contents_array[1][i], i);
+        while (strcmp(old_field_name, contents_array[2][i]) != 0) {
+            printf("Checking field %s at index %d\n", contents_array[2][i], i);
             if (i<=num_fields -1){
                 i++;
             }
@@ -372,18 +381,18 @@ void process_command(char* input){
                 return;
             }
         }
-        strcpy(contents_array[1][i], new_field_name);
+        strcpy(contents_array[2][i], new_field_name);
         printf("Field name '%s' renamed to '%s' successfully.\n", old_field_name, new_field_name);
     }
 
     else if (strcmp(command, "addfield") == 0){
         //Command to add new field to database
-        printf("Enter new field definition (type length name): ");
+        printf("Enter new field definition (name): ");
         char field_def[100];
         fgets(field_def, sizeof(field_def), stdin);
         field_def[strcspn(field_def, "\n")] = 0;
         
-        printf("Enter field type (int/str/bool): ");
+        printf("Enter field type (int/dec/str/bool): ");
         char field_type[10];
         fgets(field_type, sizeof(field_type), stdin);
         field_type[strcspn(field_type, "\n")] = 0;
@@ -428,8 +437,6 @@ void process_command(char* input){
         printf("Unknown command: %s\n", command);
     }
     
-
-
 }
 
 int main(){
