@@ -233,6 +233,26 @@ void process_command(char* input){
         printf("Field %d deleted successfully.\n", field_to_delete);
     }
 
+    else if (strcmp(command, "length") == 0 && db_file != NULL && contents != NULL){
+        //parse field name from arg_str
+        char *field_name = strtok(arg_str, " ");
+        int field_index = 0;
+        char *field_size = strtok(NULL, " \n");
+        
+        while (strcmp(field_name, contents_array[2][field_index]) != 0) {
+            if (field_index<=num_fields -1){
+                field_index++;
+            }
+            else{
+                printf("Field %s not found in database.\n", field_name);
+                return;
+            }
+        }
+        strcpy(contents_array[1][field_index], field_size);
+        printf("Field %s length updated to %s successfully.\n", field_name, field_size);
+        
+    }
+
     else if (strcmp(command,"edit") ==0 && db_file != NULL && contents != NULL){
         //parse row number and field name from arg_str
         char *row_str = strtok(arg_str, " ");
@@ -525,15 +545,7 @@ int main(){
     while (running){
         printf("> ");
         fgets(input, sizeof(input), stdin);
-        // strlwr(input);
-        // if (strcmp(input, "exit\n") == 0){
-        //     running = false;
-        //     printf("Exiting safely, after processing all transactions...\n");
-        //     break;
-        // }
-        // else{
-            process_command(input);
-        // }
+        process_command(input);
         continue;
     }
     return 0;

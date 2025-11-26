@@ -15,10 +15,11 @@ The following commands are working properly:
 - FIELDDELETE <FIELD_NAME>: Delete a field
 - RENAME <OLD_FIELD_NAME> <NEW_FIELD_NAME>: Rename a field
 - EDIT <ROW_NUMBER> <FIELD_NAME> <NEW_VALUE>: Edit a particular cell's data given its row number and field name
+- SELECT: Enter fields and select a particular range of rows to view that particular data only
 - ADDFIELD <FIELD_DEFINITION>de: Add a new field to the database
+- LENGTH <FIELD_NAME> <NEW_LENGTH>: Change length of a field
 - COMMIT: Commit all changes to the database file permanently
 - HELP: Show list of all commands and how to use them
 
 Commands and features yet to come:
-- Select statments to show particular data
 - Primary key system
