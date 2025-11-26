@@ -1,8 +1,8 @@
-int,str,str,int,int
-2,7,15,5,2
-ID,Name,Address,Phone,Age
-1,"alice","london",12345,24
-2,"tony","norway",78329,
-3,"james","new york",63472,
-4,"luna","berlin",92837,
-5,"mike","san francisco",12345,
+int,str,str,int,int,bool
+2,7,15,5,2,4
+ID,Name,Address,Phone,Age,passed?
+1,"alice","london",12345,24,false
+2,"tony","norway",78329,30,false
+3,"james","new york",63472,28,false
+4,"luna","berlin",92837,27,false
+5,"mike","beijing",12345,99,false

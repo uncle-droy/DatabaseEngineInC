@@ -15,7 +15,7 @@ The following commands are working properly:
 - FIELDDELETE <FIELD_NAME>: Delete a field
 - RENAME <OLD_FIELD_NAME> <NEW_FIELD_NAME>: Rename a field
 - EDIT <ROW_NUMBER> <FIELD_NAME> <NEW_VALUE>: Edit a particular cell's data given its row number and field name
-- ADDFIELD <FIELD_DEFINITION>: Add a new field to the database
+- ADDFIELD <FIELD_DEFINITION>de: Add a new field to the database
 - COMMIT: Commit all changes to the database file permanently
 - HELP: Show list of all commands and how to use them
 

@@ -7,6 +7,14 @@
 #include <ctype.h>
 #include <limits.h>
 
+// Define maximum length of input line
+#define MAX_LINE_LENGTH 256
+// Define maximum number of words
+#define MAX_WORDS 20
+// Define maximum length of a single word (optional, but good practice)
+#define MAX_WORD_LENGTH 50
+
+
 bool running = true;
 
 //this function processes user commands and will be called multiple times as the user wishes
@@ -155,6 +163,7 @@ void process_command(char* input){
                     break;
                 }
                 
+
             }
 
             else if (strcmp(type, "bool") == 0){
@@ -216,7 +225,7 @@ void process_command(char* input){
         }
         //shift all fields after the deleted field left by one
         for (int r = 0; r < num_records; r++){
-            for (int f = field_to_delete; f < num_fields - 1; f++){
+            for (int f = field_to_delete - 1; f < num_fields - 1; f++){
                 strcpy(contents_array[r][f], contents_array[r][f + 1]);
             }
         }
@@ -392,7 +401,7 @@ void process_command(char* input){
         fgets(field_def, sizeof(field_def), stdin);
         field_def[strcspn(field_def, "\n")] = 0;
         
-        printf("Enter field type (int/dec/str/bool): ");
+        printf("Enter field type (int/str/bool): ");
         char field_type[10];
         fgets(field_type, sizeof(field_type), stdin);
         field_type[strcspn(field_type, "\n")] = 0;
@@ -404,13 +413,84 @@ void process_command(char* input){
 
         printf("Adding new field: %s\n", field_def);
         //Update contents_array to add new field
-        strcpy(contents_array[0][num_fields], field_type);
+        if (strcmp(field_type, "int") == 0 || strcmp(field_type, "str") == 0 ){
+            strcpy(contents_array[0][num_fields], field_type);
+        }
+        else if(strcmp(field_type, "bool") == 0){
+            strcpy(contents_array[0][num_fields], "4");
+        }
+        else{
+            printf("Invalid field type: %s\n", field_type);
+            return;
+        }
         strcpy(contents_array[1][num_fields], field_length);
         strcpy(contents_array[2][num_fields], field_def);
-        for (int r = 3; r < num_records; r++){
-            strcpy(contents_array[r][num_fields], ""); //initialize new field to empty string
+        char def[10] = "";
+        if (strcmp(field_type, "str") == 0){
+            strcpy(def, "NULL"); //default empty string for string fields
         }
+        else if (strcmp(field_type, "bool") == 0){
+            strcpy(def, "false"); //default false for boolean fields
+        }
+        else if (strcmp(field_type, "int") == 0){
+            strcpy(def, "0"); //default 0 for integer fields
+        }
+
+        for (int r = 3; r < num_records; r++){
+            strcpy(contents_array[r][num_fields], def); //initialize new field to empty string
+        }
+        //default values of all fields in existing records to empty string
         num_fields++; // Increment the number of fields
+    }
+
+    else if (strcmp(command, "select") == 0){ //select particular number of rows range and particular fields names and show the data
+        char field_names_input[2048];
+        char field_names_array[20][128];
+        int cur_field_index = 0;
+        int field_indexes[20];
+        int mapped_field_index = 0;
+        
+        printf("Enter name of fields to select (comma-separated): ");
+        fgets(field_names_input, sizeof(field_names_input), stdin);
+        strtok(field_names_input, " \n"); // Remove trailing newline
+        char *field = strtok(field_names_input, ",");
+        
+        while (field != NULL){
+            printf("Selected field: %s\n", field);
+            for(int i=0;i<num_fields;i++){
+                if(strcmp(field,contents_array[2][i])==0){
+                    field_indexes[mapped_field_index]=i;
+                    mapped_field_index++;
+                    strcpy(field_names_array[cur_field_index], field);
+                    cur_field_index++;
+                    printf("Mapping field %s to index %d\n", field, i);
+                    break;
+                }
+                else{
+                    continue;
+                }
+            }
+            field = strtok(NULL, ",");
+        }
+
+        printf("Enter row range to select (start end): ");
+        int row_start_index;
+        int row_end_index;
+        scanf("%d %d", &row_start_index, &row_end_index);
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+        //Write column headers
+        for (int i = 0; i < mapped_field_index; i++){
+            printf("%-*s ", strtol(contents_array[1][field_indexes[i]], NULL, 10) + 3, field_names_array[i]);
+        }
+        printf("\n");
+        //Write data rows
+        for (int r = row_start_index + 2; r <= row_end_index + 2; r++){
+            for (int f = 0; f < mapped_field_index; f++){
+                printf("%-*s ", strtol(contents_array[1][field_indexes[f]], NULL, 10) + 3, contents_array[r][field_indexes[f]]);
+            }
+            printf("\n");
+        }
     }
 
     else if (strcmp(command, "help") == 0){
