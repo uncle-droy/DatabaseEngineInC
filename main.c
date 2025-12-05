@@ -86,7 +86,7 @@ void process_command(char* input){
                 word = strtok(lines[i], ",");
                 int j = 0;
                 while (word != NULL){
-                    strcpy(contents_array[i][j], word);
+                    strcpy(contents_array[i][j], word); //fill contents array
                     word = strtok(NULL, ",");
                     j++;
                 }
@@ -97,11 +97,55 @@ void process_command(char* input){
             
             // num_records--; //exclude header line from record count
             printf("Parsed %d records with %d fields each.\n", num_records, num_fields);
-            // printf("first one: %s\n", contents_array[1][0]);
-            // printf("Last one: %s\n", contents_array[num_records-1][2]);
             
         }
     }
+
+    else if (strcmp(command, "create") == 0){
+        printf("Processing CREATE command...\n");
+        if (contents) {
+            free(contents);
+            contents = NULL;
+        }
+        if (db_file) {
+            fclose(db_file);
+            db_file = NULL;
+        }
+        // Add logic for CREATE command
+        printf("Enter filename for new database:");
+        char filename[100];
+        fgets(filename, sizeof(filename), stdin);
+        filename[strcspn(filename, "\n")] = 0; // Remove trailing newline
+        db_file = fopen(filename, "w+");
+        if (db_file == NULL) {
+            printf("Error creating database file: %s\n", filename);
+        } else {
+            printf("Database file created: %s\n", filename);
+        }
+        
+        printf("Define corresponding field names (serparated by commas):\n");
+        char field_names[256];
+        fgets(field_names, sizeof(field_names), stdin);
+        field_names[strcspn(field_names, "\n")] = 0; // Remove trailing newline
+        
+        printf("Define fields types (serparated by commas):\n");
+        char field_definitions[256];
+        fgets(field_definitions, sizeof(field_definitions), stdin);
+        field_definitions[strcspn(field_definitions, "\n")] = 0; // Remove trailing newline
+        
+        printf("Define lengths for each field (serparated by commas):\n");
+        char field_lengths[256];
+        fgets(field_lengths, sizeof(field_lengths), stdin);
+        field_lengths[strcspn(field_lengths, "\n")] = 0; // Remove trailing newline
+
+        fprintf(db_file, "%s\n", field_definitions);
+        fprintf(db_file, "%s\n", field_lengths);
+        fprintf(db_file, "%s\n", field_names);
+
+        fclose(db_file);
+        printf("Database schema written to file successfully.\nOpen the database using the 'open' command to start adding records.\n");
+    }
+
 
     else if (strcmp(command, "insert") == 0 && db_file != NULL && contents != NULL){
         char *value = strtok(arg_str, ",");
@@ -190,15 +234,6 @@ void process_command(char* input){
         
     }
     
-    else if (strcmp(command, "overview") == 0 && db_file != NULL && contents != NULL){
-        printf("Current Database Contents:\n");
-        for (int r = 2; r < num_records; r++){
-            for (int f = 0; f < num_fields; f++){
-                printf("%-*s ", strtol(contents_array[1][f], NULL, 10) + 3, contents_array[r][f]);
-            }
-            printf("\n");
-        }
-    }
     else if (strcmp(command, "rowdelete") == 0 && db_file != NULL && contents != NULL){
         //parse row number from arg_str
         int row_to_delete = atoi(arg_str) + 2;
@@ -317,75 +352,8 @@ void process_command(char* input){
     }
 
 
-    else if (strcmp(command, "create") == 0){
-        printf("Processing CREATE command...\n");
-        if (contents) {
-            free(contents);
-            contents = NULL;
-        }
-        if (db_file) {
-            fclose(db_file);
-            db_file = NULL;
-        }
-        // Add logic for CREATE command
-        printf("Enter filename for new database:");
-        char filename[100];
-        fgets(filename, sizeof(filename), stdin);
-        filename[strcspn(filename, "\n")] = 0; // Remove trailing newline
-        db_file = fopen(filename, "w+");
-        if (db_file == NULL) {
-            printf("Error creating database file: %s\n", filename);
-        } else {
-            printf("Database file created: %s\n", filename);
-        }
-        
-        printf("Define corresponding field names (serparated by commas):\n");
-        char field_names[256];
-        fgets(field_names, sizeof(field_names), stdin);
-        field_names[strcspn(field_names, "\n")] = 0; // Remove trailing newline
-        
-        printf("Define fields types (serparated by commas):\n");
-        char field_definitions[256];
-        fgets(field_definitions, sizeof(field_definitions), stdin);
-        field_definitions[strcspn(field_definitions, "\n")] = 0; // Remove trailing newline
-        
-        printf("Define lengths for each field (serparated by commas):\n");
-        char field_lengths[256];
-        fgets(field_lengths, sizeof(field_lengths), stdin);
-        field_lengths[strcspn(field_lengths, "\n")] = 0; // Remove trailing newline
-
-        fprintf(db_file, "%s\n", field_definitions);
-        fprintf(db_file, "%s\n", field_lengths);
-        fprintf(db_file, "%s\n", field_names);
-
-        fclose(db_file);
-        printf("Database schema written to file successfully.\nOpen the database using the 'open' command to start adding records.\n");
-    }
-
-    else if (strcmp(command,"commit") ==0){
-        if (db_file == NULL || contents == NULL){
-            printf("No database is currently open. Use the 'open' command first.\n");
-            return;
-        }
-        //rewind file pointer to beginning
-        fclose(db_file);
-        db_file = fopen(filename, "w+"); //clear file contents
-        
-        //write all records back to file
-        for (int r = 0; r < num_records; r++){
-            for (int f = 0; f < num_fields; f++){
-                fprintf(db_file, "%s", contents_array[r][f]);
-                if (f < num_fields - 1){
-                    fprintf(db_file, ",");
-                }
-            }
-            if(r!=num_records - 1)fprintf(db_file, "\n");
-        }
-        fflush(db_file); //ensure all data is written to disk
-        
-        printf("All changes committed to database file successfully.\n");
-    }
-
+    
+    
     else if (strcmp(command, "rename") == 0){
         // printf("Enter old field name: ");
         char old_field_name[100];
@@ -463,6 +431,17 @@ void process_command(char* input){
         num_fields++; // Increment the number of fields
     }
 
+    else if (strcmp(command, "overview") == 0 && db_file != NULL && contents != NULL){
+        printf("Current Database Contents:\n");
+        for (int r = 2; r < num_records; r++){
+            for (int f = 0; f < num_fields; f++){
+                printf("%-*s ", strtol(contents_array[1][f], NULL, 10) + 3, contents_array[r][f]);
+            }
+            printf("\n");
+        }
+    }
+    
+
     else if (strcmp(command, "select") == 0){ //select particular number of rows range and particular fields names and show the data
         char field_names_input[2048];
         char field_names_array[20][128];
@@ -473,7 +452,7 @@ void process_command(char* input){
         printf("Enter name of fields to select (comma-separated): ");
         fgets(field_names_input, sizeof(field_names_input), stdin);
         strtok(field_names_input, " \n"); // Remove trailing newline
-        char *field = strtok(field_names_input, ",");
+        char *field = strtok(field_names_input, " ,");
         
         while (field != NULL){
             printf("Selected field: %s\n", field);
@@ -490,7 +469,7 @@ void process_command(char* input){
                     continue;
                 }
             }
-            field = strtok(NULL, ",");
+            field = strtok(NULL, " ,");
         }
 
         printf("Enter row range to select (start end): ");
@@ -513,6 +492,33 @@ void process_command(char* input){
         }
     }
 
+
+
+    else if (strcmp(command,"commit") ==0){
+        if (db_file == NULL || contents == NULL){
+            printf("No database is currently open. Use the 'open' command first.\n");
+            return;
+        }
+        //rewind file pointer to beginning
+        fclose(db_file);
+        db_file = fopen(filename, "w+"); //clear file contents
+        
+        //write all records back to file
+        for (int r = 0; r < num_records; r++){
+            for (int f = 0; f < num_fields; f++){
+                fprintf(db_file, "%s", contents_array[r][f]);
+                if (f < num_fields - 1){
+                    fprintf(db_file, ",");
+                }
+            }
+            if(r!=num_records - 1)fprintf(db_file, "\n");
+        }
+        fflush(db_file); //ensure all data is written to disk
+        
+        printf("All changes committed to database file successfully.\n");
+    }
+
+
     else if (strcmp(command, "help") == 0){
         printf("Available commands:\n");
         printf("open - Open an existing database file\n");
@@ -520,6 +526,9 @@ void process_command(char* input){
         printf("insert <values> - Insert a new record with comma-separated values\n");
         printf("overview - Display all records in the current database\n");
         printf("rename - Rename a specific field\n");
+        printf("addfield - Add a new field to the database\n");
+        printf("length <field_name> <new_length> - Change the length of a specific field\n");
+        printf("select - Select specific fields and rows to display\n");
         printf("rowdelete <row_number> - Delete a specific row by its number\n");
         printf("fielddelete <field_number> - Delete a specific field by its number\n");
         printf("edit <row_number> <field_name> <new_value> - Edit data in a specific field in a specific row\n");
